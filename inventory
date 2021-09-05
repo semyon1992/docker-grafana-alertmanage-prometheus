@@ -1,0 +1,12 @@
+# file: production
+ 
+[containder-runtime-servers:children]
+docker-servers
+ 
+[docker-servers]
+192.168.56.101
+
+
+[containder-runtime-servers:vars]
+env=PROD
+ansible_ssh_user=root

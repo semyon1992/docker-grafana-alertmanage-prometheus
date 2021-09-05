@@ -1,0 +1,86 @@
+- name: Ensure docke volume mapping host directories exist
+  file:
+    state: directory
+    mode: "775"
+    owner: "root"
+    group: "docker"
+    recurse: yes
+    path: "{{ item | regex_replace('^(?P<host>.+):(?P<container>.+):(?P<mode>.+)', '\\g<host>') }}"
+  with_items:
+    - "{{ docker_prometheus_directory_volumes }}"
+  tags:
+    - install
+    - upgrade
+
+- name: Ensure docker volume mapping host file directories exist
+  file:
+    state: directory
+    recurse: yes
+    mode: "775"
+    owner: "root"
+    group: "docker"
+    path: "{{ item | regex_replace('^(?P<host>.+):(?P<container>.+):(?P<mode>.+)', '\\g<host>') | dirname }}"
+  with_items:
+    - "{{ docker_prometheus_file_volumes }}"
+  tags:
+    - install
+    - upgrade
+
+- name: Copy docker volume mapping host file
+  template:
+    src="{{ docker_prometheus_template_path }}{{ item | regex_replace('^(?P<host>.+):(?P<container>.+):(?P<mode>.+)', '\\g<host>') | basename }}.j2"
+    dest="{{ item | regex_replace('^(?P<host>.+):(?P<container>.+):(?P<mode>.+)', '\\g<host>') }}"
+    mode='0775'
+  with_items:
+    - "{{ docker_prometheus_file_volumes }}"
+  tags:
+    - install
+    - upgrade
+
+- name: Prometheus config File
+  ansible.builtin.template:
+    src: templates/prometheus.yml.j2
+    dest: /opt/prometheus/config/prometheus.yml
+    owner: root
+    group: docker
+    mode: u=rw,g=rw
+  
+- name: alert rules 
+  ansible.builtin.template:
+    src: templates/alert.rules
+    dest: /opt/prometheus/config/alert.rules
+    owner: root
+    group: docker
+    mode: u=rw,g=rw
+
+
+
+- name: Remove existing {{ docker_prometheus_name }} container
+  docker_container:
+    docker_api_version: "{{ docker_api_version }}"
+    image: "{{ docker_prometheus_image }}"
+    name: "{{ docker_prometheus_name }}"
+    state: absent
+  tags:
+    - install
+    - upgrade
+
+- name: Run docker prometheus container
+  become: true
+  docker_container:
+    docker_api_version: "{{ docker_api_version }}"
+    env: "{{ docker_prometheus_env }}"
+    expose: "{{ docker_prometheus_expose }}"
+    image: "{{ docker_prometheus_image }}"
+    name: "{{ docker_prometheus_name }}"
+    ports: "{{ docker_prometheus_ports }}"
+    links: "{{ docker_prometheus_links }}"
+    volumes: "{{ docker_prometheus_volumes }}"
+    log_driver: "{{ docker_prometheus_log_driver }}"
+    log_opt: "{{ docker_prometheus_log_opt }}"
+    pull: true
+    restart_policy: always
+    state: started
+  tags:
+    - install
+    - upgrade

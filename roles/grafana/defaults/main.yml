@@ -1,0 +1,31 @@
+---
+# defaults file for docker-grafana
+docker_grafana_name: grafana
+docker_grafana_image: grafana/grafana
+docker_grafana_env: {}
+docker_grafana_net: default
+docker_grafana_expose:
+  - 3000:3000
+docker_grafana_ports: "{{ docker_grafana_expose }}"
+
+# grafana sqlite3 database
+docker_grafana_data_dir: /opt/grafana/data
+docker_grafana_plugins_dir: /opt/grafana/plugins
+docker_grafana_config_dir: /opt/grafana/etc
+docker_grafana_provisioning_dir: /opt/grafana/etc/provisioning
+docker_grafana_datasource_dir: /opt/grafana/etc/provisioning/datasources
+docker_grafana_directory_volumes:
+  - "/opt/grafana/data:/var/lib/grafana:rw"
+  - "/opt/grafana/plugins:/var/lib/grafana/plugins:rw"
+
+docker_grafana_file_volumes: [] 
+docker_grafana_template_path: ""
+docker_grafana_volumes: "{{ docker_grafana_directory_volumes + docker_grafana_file_volumes }}"
+docker_grafana_links: []
+docker_network_mode: host
+docker_grafana_log_driver: syslog
+docker_grafana_log_opt:
+  syslog-facility: local0
+  tag: grafana
+docker_grafana_memory_limit: 512MB
+docker_api_version: 1.41

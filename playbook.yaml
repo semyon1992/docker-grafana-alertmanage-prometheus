@@ -1,0 +1,9 @@
+- hosts: all
+  gather_facts: no
+  roles:
+    - docker
+    - grafana
+    - prometheus 
+    - alertmanager
+    - grafana
+    

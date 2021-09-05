@@ -1,0 +1,80 @@
+- name: Ensure docke volume mapping host directories exist
+  file:
+    state: directory
+    mode: "775"
+    recurse: yes
+    owner: "root"
+    group: "docker"
+    path: "{{ item | regex_replace('^(?P<host>.+):(?P<container>.+):(?P<mode>.+)', '\\g<host>') }}"
+  with_items:
+    - "{{ docker_alertmanager_directory_volumes }}"
+  tags:
+    - install
+    - upgrade
+
+- name: Ensure docker volume mapping host file directories exist
+  file:
+    state: directory
+    mode: "775"
+    recurse: yes
+    owner: "root"
+    group: "docker"
+    path: "{{ item | regex_replace('^(?P<host>.+):(?P<container>.+):(?P<mode>.+)', '\\g<host>') | dirname }}"
+  with_items:
+    - "{{ docker_alertmanager_file_volumes }}"
+  tags:
+    - install
+    - upgrade
+
+- name: Copy docker volume mapping host file
+  template:
+    src="{{ docker_alertmanager_template_path }}{{ item | regex_replace('^(?P<host>.+):(?P<container>.+):(?P<mode>.+)', '\\g<host>') | basename }}.j2"
+    dest="{{ item | regex_replace('^(?P<host>.+):(?P<container>.+):(?P<mode>.+)', '\\g<host>') }}"
+    mode='0774'
+    
+  with_items:
+    - "{{ docker_alertmanager_file_volumes }}"
+  tags:
+    - install
+    - upgrade
+
+- name: Remove existing {{ docker_alertmanager_name }} container
+  docker_container:
+    docker_api_version: "{{ docker_api_version }}"
+    image: "{{ docker_alertmanager_image }}"
+    name: "{{ docker_alertmanager_name }}"
+    state: absent
+  tags:
+    - install
+    - upgrade
+
+- name: Prometheus config File
+  ansible.builtin.template:
+    src: templates/alertmanager.yml.j2
+    dest: /opt/alertmanager/etc/alertmanager.yml
+    owner: root
+    group: docker
+    mode: u=rw,g=r
+
+
+
+
+- name: Run docker alertmanager container
+  become: true
+  docker_container:
+    docker_api_version: "{{ docker_api_version }}"
+    env: "{{ docker_alertmanager_env }}"
+    expose: "{{ docker_alertmanager_expose }}"
+    image: "{{ docker_alertmanager_image }}"
+    name: "{{ docker_alertmanager_name }}"
+    ports: "{{ docker_alertmanager_ports }}"
+    links: "{{ docker_alertmanager_links }}"
+    volumes: "{{ docker_alertmanager_volumes }}"
+    log_driver: "{{ docker_alertmanager_log_driver }}"
+    log_opt: "{{ docker_alertmanager_log_opt }}"
+    pull: true
+    restart_policy: always
+    state: started
+  tags:
+    - install
+    - upgrade

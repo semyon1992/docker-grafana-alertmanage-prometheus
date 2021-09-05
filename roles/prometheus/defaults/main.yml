@@ -1,0 +1,28 @@
+---
+# defaults file for docker-prometheus
+docker_prometheus_name: prometheus
+docker_prometheus_image: prom/prometheus
+docker_prometheus_env: {}
+docker_prometheus_net: default
+docker_prometheus_expose:
+  - 9000:9000
+  - 9090:9090
+docker_prometheus_ports: "{{ docker_prometheus_expose }}"
+
+# prometheus sqlite3 database
+docker_prometheus_config_dir: /opt/prometheus/config
+docker_prometheus_data_dir:  /opt/prometheus/data
+docker_prometheus_directory_volumes:
+  - "/opt/prometheus/data:/var/lib/prometheus:rw"
+  - "/opt/prometheus/config:/etc/prometheus:rw"
+docker_prometheus_file_volumes: []
+docker_prometheus_template_path: ""
+docker_prometheus_volumes: "{{ docker_prometheus_directory_volumes + docker_prometheus_file_volumes }}"
+docker_prometheus_links: []
+docker_network_mode: host
+docker_prometheus_log_driver: syslog
+docker_prometheus_log_opt:
+  syslog-facility: local0
+  tag: prometheus
+docker_prometheus_memory_limit: 512MB
+docker_api_version: 1.41

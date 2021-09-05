@@ -1,0 +1,29 @@
+---
+# defaults file for docker-alertmanager
+docker_alertmanager_name: alertmanager
+docker_alertmanager_image: prom/alertmanager
+docker_alertmanager_env: {}
+docker_alertmanager_net: default
+docker_alertmanager_expose:
+  - 9093:9093
+docker_alertmanager_ports: "{{ docker_alertmanager_expose }}"
+
+# alertmanager sqlite3 database
+docker_alertmanager_data_dir: /opt/alertmanager/data
+docker_alertmanager_conf_dir: /opt/alertmanager/etc
+docker_alertmanager_tmpl_dir: /opt/alertmanager/template
+docker_alertmanager_directory_volumes:
+  - "/opt/alertmanager/etc:/etc/alertmanager:rw"
+  - "/opt/alertmanager/data:/alertmanager:rw"
+  - "/opt/alertmanager/template:/etc/alertmanager/template:rw"
+docker_alertmanager_file_volumes: []
+docker_alertmanager_template_path: ""
+docker_alertmanager_volumes: "{{ docker_alertmanager_directory_volumes + docker_alertmanager_file_volumes }}"
+docker_alertmanager_links: []
+docker_network_mode: host
+docker_alertmanager_log_driver: syslog
+docker_alertmanager_log_opt:
+  syslog-facility: local0
+  tag: alertmanager
+docker_alertmanager_memory_limit: 512MB
+docker_api_version: 1.41

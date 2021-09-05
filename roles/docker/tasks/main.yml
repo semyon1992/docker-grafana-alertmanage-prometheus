@@ -1,0 +1,38 @@
+- name: Get release codename
+  shell: lsb_release -cs
+  register: ubuntu_version
+
+- name: Trust docker repo gpg key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add docker repository
+  apt_repository:
+    repo: "deb [arch=amd64]  https://download.docker.com/linux/ubuntu {{ubuntu_version.stdout}}  stable"
+    state: present
+
+- name: Install Docker
+  apt:
+    name: docker-ce
+    state: present
+    update_cache: yes
+
+- name: Install python3-docker
+  apt:
+    name: python3-docker
+    state: present
+    update_cache: yes
+
+- name: configure docker daemon
+  ansible.builtin.template:
+    src: templates/daemon.json.j2
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: docker
+    mode: u=rw,g=r
+
+- name: Restart docker  service 
+  ansible.builtin.systemd:
+    state: restarted
+    name: docker

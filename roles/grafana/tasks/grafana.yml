@@ -1,0 +1,108 @@
+- name: Ensure docke volume mapping host directories exist
+  file:
+    state: directory
+    mode: "777"
+    recurse: yes
+    owner: "root"
+    group: "root"
+    path: "{{ item | regex_replace('^(?P<host>.+):(?P<container>.+):(?P<mode>.+)', '\\g<host>') }}"
+  with_items:
+    - "{{ docker_grafana_directory_volumes }}"
+  tags:
+    - install
+    - upgrade
+
+- name: Ensure docker volume mapping host file directories exist
+  file:
+    state: directory
+    recurse: yes
+    mode: "777"
+    owner: "root"
+    group: "root"
+    path: "{{ item | regex_replace('^(?P<host>.+):(?P<container>.+):(?P<mode>.+)', '\\g<host>') | dirname }}"
+  with_items:
+    - "{{ docker_grafana_file_volumes }}"
+  tags:
+    - install
+    - upgrade
+
+- name: Copy docker volume mapping host file
+  template:
+    src="{{ docker_grafana_template_path }}{{ item | regex_replace('^(?P<host>.+):(?P<container>.+):(?P<mode>.+)', '\\g<host>') | basename }}.j2"
+    dest="{{ item | regex_replace('^(?P<host>.+):(?P<container>.+):(?P<mode>.+)', '\\g<host>') }}"
+    mode='777'
+  with_items:
+    - "{{ docker_grafana_file_volumes }}"
+  tags:
+    - install
+    - upgrade
+
+- name: Remove existing {{ docker_grafana_name }} container
+  docker_container:
+    docker_api_version: "{{ docker_api_version }}"
+    image: "{{ docker_grafana_image }}"
+    name: "{{ docker_grafana_name }}"
+    state: absent
+  tags:
+    - install
+    - upgrade
+
+- name: grafana etc dir
+  file:
+    state: directory
+    recurse: yes
+    mode: "777"
+    owner: "root"
+    group: "root"
+    path: "/opt/grafana/etc" 
+
+
+- name: grafana config File
+  ansible.builtin.template:
+    src: templates/grafana.ini.j2
+    dest: /opt/grafana/etc/grafana.ini
+    owner: root
+    group: docker
+    mode: u=rw,g=rw
+
+- name: Ensure docker volume mapping host file directories exist
+  file:
+    state: directory
+    recurse: yes
+    mode: "777"
+    owner: "root"
+    group: "root"
+    path: "/opt/grafana/etc/provisioning/datasources" 
+
+- name: grafana datasource File
+  ansible.builtin.template:
+    src: templates/prometheus.yml.j2
+    dest: /opt/grafana/etc/provisioning/datasources/prometheus.yml
+    owner: root
+    group: docker
+    mode: u=rw,g=rw
+
+
+- name: Run docker grafana container
+  become: true
+  docker_container:
+    docker_api_version: "{{ docker_api_version }}"
+    env: "{{ docker_grafana_env }}"
+    expose: "{{ docker_grafana_expose }}"
+    image: "{{ docker_grafana_image }}"
+    name: "{{ docker_grafana_name }}"
+    ports: "{{ docker_grafana_ports }}"
+    links: "{{ docker_grafana_links }}"
+    volumes: "{{ docker_grafana_volumes }}"
+    mounts:
+          - source: /opt/grafana/etc
+            target: /etc/grafana
+            type: bind
+    log_driver: "{{ docker_grafana_log_driver }}"
+    log_opt: "{{ docker_grafana_log_opt }}"
+    pull: true
+    restart_policy: always
+    state: started
+  tags:
+    - install
+    - upgrade
